@@ -1,8 +1,17 @@
+let playerColour = Math.floor(Math.random() * 2); // 0 for White, 1 for Black 
+
 (() => {
     let isLight = true;
-    for (let square = 0; square < 64; square++) {
-        if (square % 8 != 0) isLight = !isLight;
-        document.querySelector(".board").innerHTML += "<div class=\"square " + (isLight ? "light" : "dark") + "\" id=\"" + square + "\"></div>";
+    if (playerColour == 0) {
+        for (let square = 0; square < 64; square++) {
+            if (square % 8 != 0) isLight = !isLight;
+            document.querySelector(".board").innerHTML += "<div class=\"square " + (isLight ? "light" : "dark") + "\" id=\"" + square + "\"></div>";
+        }
+    } else {
+        for (let square = 64; square > 0; square--) {
+            if (square % 8 != 0) isLight = !isLight;
+            document.querySelector(".board").innerHTML += "<div class=\"square " + (isLight ? "light" : "dark") + "\" id=\"" + (square - 1) + "\"></div>";
+        }
     }
 })();
 
@@ -220,11 +229,7 @@ function generateSlidingMoves(square, piece) {
 function generateKingMoves(square) {
     let possibleMoves = [];
 
-    console.log(possibleMoves);
-
     for (var direction = 0; direction < 8; direction++) {
-        console.log(direction);
-        console.log(possibleMoves[direction]);
         if ((square + DirectionOffset[Direction[direction]] >= 0 && square + DirectionOffset[Direction[direction]] <= 63) && getColour(board[square + DirectionOffset[Direction[direction]]]) == getColour(board[square])) {
             continue;
         }
@@ -317,8 +322,8 @@ function generateKnightMoves(square) {
 
     for (var i = 0; i < 8; i += 2) {
         for (var j = 0; j < directionComplement(i).length; j++) {
-            let minorDirection = direction[directionComplement(i)[j]];
-            let majorDirection = direction[i];
+            let minorDirection = Direction[directionComplement(i)[j]];
+            let majorDirection = Direction[i];
             if  (squaresToEdge(square, Direction[minorDirection]) < 1 || squaresToEdge(square, Direction[majorDirection]) < 2 || getColour(board[square]) == getColour(board[square + 2 * DirectionOffset[majorDirection] + DirectionOffset[minorDirection]])) {} else {
                 possibleMoves.push({from: square, to: square + 2 * DirectionOffset[majorDirection] + DirectionOffset[minorDirection]});
             }
@@ -326,6 +331,65 @@ function generateKnightMoves(square) {
     }
 
     return possibleMoves;
+}
+
+function formatMove(move, allMoves) {
+    let movePiece = (piece => {
+        switch (piece) {
+            case Piece.blackKing:
+            case Piece.whiteKing:
+                return "K";
+                break;
+            case Piece.blackQueen:
+            case Piece.whiteQueen:
+                return "Q";
+                break;
+            case Piece.blackRook:
+            case Piece.whiteRook:
+                return "R";
+                break;
+            case Piece.blackBishop:
+            case Piece.whiteBishop:
+                return "B";
+                break;
+            case Piece.blackKnight:
+            case Piece.whiteKnight:
+                return "N";
+                break;
+            case Piece.blackPawn:
+            case Piece.whitePawn:
+                return "";
+                break;
+            default: 
+                console.error("Piece formatting error");
+                return "<INVALID_PIECE>";
+        }
+    })(board[move.from]);
+    let identifier = (() => {
+        if (board[move.from] == Piece.whitePawn || board[move.from] == Piece.blackPawn) return "";
+        for (var i = allMoves.length - 1; i >= 0; i--) {
+            if (move.to == allMoves[i].to && move.from != allMoves[i].from) {
+                if ((move.from % 8) == (allMoves[i].from % 8)) {
+                    return String(8 - ((move.from - move.from % 8) / 8));
+                } else {
+                    return {
+                        0: "a",
+                        1: "b",
+                        2: "c",
+                        3: "d",
+                        4: "e",
+                        5: "f",
+                        6: "g",
+                        7: "h"
+                    }[move.from % 8];
+                }
+            }
+        }
+        return "";
+    })();
+    let capture = (board[move.to] == Piece.None ? "" : ((board[move.from] == Piece.whitePawn || board[move.from] == Piece.blackPawn) ? { 0: "a", 1: "b", 2: "c", 3: "d", 4: "e", 5: "f", 6: "g", 7: "h" }[move.from % 8] : "") + "x");
+    let destinationSquare = { 0: "a", 1: "b", 2: "c", 3: "d", 4: "e", 5: "f", 6: "g", 7: "h" }[move.to % 8] + String(8 - ((move.to - move.to % 8) / 8));
+    return movePiece + identifier + capture + destinationSquare;
 }
 
 function isInCheck(colour) {
